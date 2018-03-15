@@ -1,26 +1,47 @@
 package tsheppard01
 
-import java.io.File
+import java.io.{BufferedWriter, File, FileWriter}
 
-import akka.actor.{ActorSystem, Props}
-import akka.routing.RoundRobinPool
-import tsheppard01.actors.DataReadingActor
+import akka.actor.ActorSystem
+import akka.routing.FromConfig
+import tsheppard01.actors.{DataReadingActor, DataStreamingActor, NextActor}
+import tsheppard01.data.CsvDataGenerator
+import tsheppard01.filesplitters.CsvFileSplitRecordReader
 
 object ParallelCsvFileReading {
 
   def main(args: Array[String]): Unit = {
 
-    val csvFileGenerator = new CsvFileGenerator()
-    val pathToData = csvFileGenerator.generateCsvFile()
+    val dataGenerator = new CsvDataGenerator()
+    val csvData = dataGenerator.generateData(10, 10000, 10)
 
-    val actorSystem = ActorSystem("Parallel_reading_of_csv_file")
+    val reader = new CsvFileSplitRecordReader()
 
-    val dataReadingActorRef = actorSystem.actorOf(
-      RoundRobinPool(5).props(DataReadingActor())
+    val pathToFile = "/Users/terences/generatedCsvData.csv"
+    val bufferedWriter =
+      new BufferedWriter(
+        new FileWriter(
+          new File(pathToFile)
+        )
+      )
+    bufferedWriter.write(csvData)
+    bufferedWriter.close()
+
+    val actorSystem = ActorSystem("readCsv")
+
+    val nextActorRef = actorSystem.actorOf(
+      NextActor(),
+      name = "NextActor"
     )
 
-    getSplits(pathToData, 1000).foreach{ split =>
-      dataReadingActorRef ! DataReadingActor.ReadFileSplit(pathToData, split._1, split._2)
+    val dataReadingActorRef = actorSystem.actorOf(
+      FromConfig.props(DataReadingActor(reader)),
+      name = "DataReader"
+    )
+
+    val fileSplits = getSplits(pathToFile, 20)
+    fileSplits.foreach{ split =>
+      dataReadingActorRef ! DataReadingActor.ReadFileSplit(pathToFile, split._1, split._2)
     }
   }
 
@@ -30,9 +51,9 @@ object ParallelCsvFileReading {
 
     val splitSize: Long = Math.floor(fileSize/numSplit).toLong
 
-    (List.range(0L, fileSize, splitSize) ++ Seq(fileSize - 1))
+    List.range(0L, fileSize, splitSize)
       .sliding(2).map{ pairs =>
         (pairs.head, pairs.takeRight(1).head)
-      }.toSeq
+      }.toList
   }
 }

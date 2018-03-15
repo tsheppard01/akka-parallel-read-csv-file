@@ -1,23 +1,19 @@
 package tsheppard01.actors
 
-import akka.actor.{Actor, Props}
-import tsheppard01.CsvFileReader
+import akka.actor.{Actor, ActorLogging, Props}
 import tsheppard01.actors.DataReadingActor.ReadFileSplit
+import tsheppard01.filesplitters.CsvFileSplitRecordReader
 
-class DataReadingActor(reader: CsvFileReader) extends Actor {
+class DataReadingActor(reader: CsvFileSplitRecordReader) extends Actor with ActorLogging {
   override def receive = {
     case ReadFileSplit(pathToFile, startPosition, endPosition) =>
-      val records = reader.readRecords(pathToFile, startPosition, endPosition)
-      println(s"Num records: ${records.length}")
+      reader.readRecordsInFileSplit(pathToFile, startPosition, endPosition)
   }
 }
 
 object DataReadingActor{
-  def apply(): Props = {
-    val csvFileReader = new CsvFileReader()
-    Props(new DataReadingActor(csvFileReader))
-
-  }
+  def apply(reader: CsvFileSplitRecordReader): Props =
+    Props(new DataReadingActor(reader))
 
   final case class ReadFileSplit(pathToFile: String, startPosition: Long, endPosition: Long)
 }
