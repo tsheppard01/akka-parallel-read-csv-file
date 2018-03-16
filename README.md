@@ -19,8 +19,8 @@ memory as a batch
 
 #### ParallelCsvFileStreaming
 
-FileSplits are streamed from file by actors.  Records are read from file one at a time and only those read are.
-Not all records are loaded into memory at the same time, which can result in lower memory usage for large data files.
+FileSplits are streamed from file by actors.  Records are read from file one at a time.  Not all records are loaded into
+memory at the same time, which can result in lower memory usage for large data files.
 
 
 ### Usage
