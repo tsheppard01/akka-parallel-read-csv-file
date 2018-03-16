@@ -4,10 +4,11 @@ inside an akka actor system by breaking it into filesplits.
 
 ### How it works
 
-The file is split into arbitrary filesplits based on the size of the file. The partial records at the beginning of a 
-file split are not read within that filesplit.  They are captured by reading off the end of the previous filesplit
-until a record delimiter is found. Reading of filesplits is completely independent so they can be
-read in parallel
+The file is split into arbitrary filesplits based on the size of the file which are read independently. Any records 
+spanning two filesplits are read within the filesplit containing the beginning of the record.  They are captured by 
+reading off the end of a filesplit until a record delimiter is found. Reading of filesplits is completely independent 
+so they can be read in parallel.  Data reading actors are passed messages containing filesplit beginning and end points
+and take responsiblity for reading all records in the file split.
 
 Repo contains two apps *ParallelCsvFileReading* and *ParallelCsvFileStreaming*
 
