@@ -1,31 +1,27 @@
 package tsheppard01
 
-import java.io.{BufferedWriter, File, FileWriter}
-
 import akka.actor.ActorSystem
 import akka.routing.FromConfig
+import com.typesafe.config.ConfigFactory
 import tsheppard01.ParallelCsvFileReading.getSplits
 import tsheppard01.actors.{DataStreamingActor, NextActor}
-import tsheppard01.data.CsvDataGenerator
-import tsheppard01.filesplitters.{CsvFileSplitRecordIteratorProvider, CsvFileSplitRecordReader}
+import tsheppard01.filesplitters.CsvFileSplitRecordIteratorProvider
 
+/**
+  * App to show streaming records from a local csv file in parallel.
+  * Each DataStreamingActor reads a portion of the csv file.  Records
+  * are streamed from the file only as they are required.  A data
+  * file should exist at location given in conf.
+  *
+  * Actors:
+  *   DataStreamingActor -> NextActor
+  *
+  */
 object ParallelCsvFileStreaming {
 
   def main(args: Array[String]): Unit = {
-    val dataGenerator = new CsvDataGenerator()
-    val csvData = dataGenerator.generateData(10, 10000000, 10)
-
-    val reader = new CsvFileSplitRecordReader()
-
-    val pathToFile = "/Users/terences/generatedCsvData.csv"
-    val bufferedWriter =
-      new BufferedWriter(
-        new FileWriter(
-          new File(pathToFile)
-        )
-      )
-    bufferedWriter.write(csvData)
-    bufferedWriter.close()
+    val config = ConfigFactory.load()
+    val pathToFile = config.getString("app.data.filepath")
 
     val recordIteratorProvider = new CsvFileSplitRecordIteratorProvider()
     val actorSystem = ActorSystem("streamCsv")

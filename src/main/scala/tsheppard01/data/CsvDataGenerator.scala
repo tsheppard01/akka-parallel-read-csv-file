@@ -2,8 +2,20 @@ package tsheppard01.data
 
 import scala.util.Random
 
+/**
+  * Class to generated random csv data
+  */
 class CsvDataGenerator {
 
+  /**
+    * Method to create random csv data.  Length of fields is
+    * between 0 and maxFieldLength
+    *
+    * @param numFields Number of fields in generated records
+    * @param numRecords Number of record to generate
+    * @param maxFieldLength The maximum length of the generated fields
+    * @return
+    */
   def generateData(numFields: Int,
                    numRecords: Int,
                    maxFieldLength: Int): String =
@@ -31,6 +43,10 @@ class CsvDataGenerator {
       }
       .mkString("")
 
+  /**
+    * Method to generate random upper or lower case character
+    * with value A-Z
+    */
   private def generateRandomCharAToZ(): Char = {
     val high = 122
     val low = 65

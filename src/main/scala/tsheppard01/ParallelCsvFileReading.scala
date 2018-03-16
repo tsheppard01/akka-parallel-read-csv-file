@@ -1,31 +1,30 @@
 package tsheppard01
 
-import java.io.{BufferedWriter, File, FileWriter}
+import java.io.File
 
 import akka.actor.ActorSystem
 import akka.routing.FromConfig
-import tsheppard01.actors.{DataReadingActor, DataStreamingActor, NextActor}
-import tsheppard01.data.CsvDataGenerator
+import com.typesafe.config.ConfigFactory
+import tsheppard01.actors.{DataReadingActor, NextActor}
 import tsheppard01.filesplitters.CsvFileSplitRecordReader
 
+/**
+  * App to show reading records from a local csv file in parallel.
+  * Each DataStreamingActor reads a portion of the csv file.  Records
+  * are read from the file in batches at a time where a batch is an
+  * entire file split.  A data file should exist at location given in conf.
+  *
+  * Actors:
+  *   DataReadingActor -> NextActor
+  *
+  */
 object ParallelCsvFileReading {
 
   def main(args: Array[String]): Unit = {
 
-    val dataGenerator = new CsvDataGenerator()
-    val csvData = dataGenerator.generateData(10, 10000, 10)
-
+    val config = ConfigFactory.load()
+    val pathToFile = config.getString("app.data.filepath")
     val reader = new CsvFileSplitRecordReader()
-
-    val pathToFile = "/Users/terences/generatedCsvData.csv"
-    val bufferedWriter =
-      new BufferedWriter(
-        new FileWriter(
-          new File(pathToFile)
-        )
-      )
-    bufferedWriter.write(csvData)
-    bufferedWriter.close()
 
     val actorSystem = ActorSystem("readCsv")
 
@@ -35,7 +34,7 @@ object ParallelCsvFileReading {
     )
 
     val dataReadingActorRef = actorSystem.actorOf(
-      FromConfig.props(DataReadingActor(reader)),
+      FromConfig.props(DataReadingActor(nextActorRef, reader)),
       name = "DataReader"
     )
 
@@ -45,11 +44,18 @@ object ParallelCsvFileReading {
     }
   }
 
-  def getSplits(pathToFile: String, numSplit: Int): Seq[(Long, Long)] = {
+  /**
+    * Method to calculate file split start and end byte offset points in file
+    *
+    * @param pathToFile Path to data file
+    * @param numSplits Number of file splits to generate
+    * @return
+    */
+  def getSplits(pathToFile: String, numSplits: Int): Seq[(Long, Long)] = {
     val file = new File(pathToFile)
     val fileSize: Long = file.length()
 
-    val splitSize: Long = Math.floor(fileSize/numSplit).toLong
+    val splitSize: Long = Math.floor(fileSize/numSplits).toLong
 
     List.range(0L, fileSize, splitSize)
       .sliding(2).map{ pairs =>

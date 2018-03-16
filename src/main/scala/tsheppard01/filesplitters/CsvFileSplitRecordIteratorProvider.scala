@@ -9,6 +9,9 @@ import org.apache.commons.io.{IOUtils, LineIterator}
 
 import scala.collection.convert.WrapAsScala.asScalaIterator
 
+/**
+  * Trait for getting iterator to stream records from portion of a file
+  */
 trait FileSplitRecordIteratorProvider {
 
   def getRecordIterator(pathToFile: String,
@@ -16,12 +19,16 @@ trait FileSplitRecordIteratorProvider {
                         endByteOffset: Long): Iterator[String]
 }
 
+/**
+  * Class to get an iterator containing records in a file
+  */
 class CsvFileSplitRecordIteratorProvider extends FileSplitRecordIteratorProvider {
 
   /**
     * Method to create an iterator containing the records in a portion of a file.
-    * Reads from the beginning of the first full record in the fileSplit until
-    * the end of the last record that begins in the fileSplit
+    * The iterator streams records from file as they are read.  Reads from the
+    * beginning of the first full record in the fileSplit until the end of the
+    * last record that begins in the fileSplit
     * ie reads from startByteOffset + X to endByteOffset + Y
     *
     * @param pathToFile Path to the file to read
